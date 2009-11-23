@@ -1,6 +1,8 @@
-IOSea-Browse version 0.0.1
+IOSea-Browse version 1.0.1
 
-IOSea-Browse creates a browsable HTML list of data based on a SQL statement.
+IOSea-Browse creates a browsable HTML list of data based on a field list-of-hashes and a SQL statement.
+
+The package includes working scripts and data, which should be copied to cgi-bin for testing or further development.
 
 INSTALLATION
 

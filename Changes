@@ -1,5 +1,9 @@
 Revision history for IOSea-Browse
 
+1.0.1  Mon Nov 23 22:00:00 2009
+       Documentation.
+       SQL for state capitals actually included.
+
 1.0.0  Mon Nov 23 15:00:00 2009
        Initial release.
        Simple fields hash plus SQL statement.

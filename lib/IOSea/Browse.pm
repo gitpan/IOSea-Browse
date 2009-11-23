@@ -7,7 +7,7 @@ use warnings;
 use strict;
 use Carp;
 
-use version; our $VERSION = qv('1.0.0');
+use version; our $VERSION = qv('1.0.1');
 
 {
         my %dbh_of       :ATTR( :get<dbh>      :set<dbh>                                          );
@@ -102,9 +102,11 @@ use version; our $VERSION = qv('1.0.0');
 
 	sub _build_javascript {
 		my ( $self ) = @_;
+		my $url      = $self->get_urls()->{root} .  $self->get_urls()->{browse};
 		my $html     = '<script language="javascript">' . "\n";
                    $html    .= 'function browseSetIndex(index) {' . "\n";
                    $html    .= '	document.getElementById("index").value = index;' . "\n";
+                   $html    .= '	document.browse.action = "' . $url . '";' . "\n";
                    $html    .= '	document.browse.submit();' . "\n";
                    $html    .= '}' . "\n";
                    $html    .= 'function browseSort(sort) {' . "\n";
@@ -120,6 +122,7 @@ use version; our $VERSION = qv('1.0.0');
                    $html    .= '	    document.getElementById("sort_vec").value = "asc";' . "\n";
                    $html    .= '	}' . "\n";
                    $html    .= '	document.getElementById("sort").value = sort;' . "\n";
+                   $html    .= '	document.browse.action = "' . $url . '";' . "\n";
                    $html    .= '	document.browse.submit();' . "\n";
                    $html    .= '}' . "\n";
 		if ( $self->delete_enabled() eq 'multi' ) {
@@ -394,15 +397,15 @@ __END__
 
 =head1 NAME
 
-IOSea::Browse - Build HTML table to display rows with flexible delete and multi-links for edit.
+IOSea::Browse - HTML table from MySQL to display rows with sortable columns, flexible delete links, and multiple column link-outs.
 
 =head1 VERSION
 
-This document describes IOSea::Browse version 1.0.0
+This document describes IOSea::Browse version 1.0.1
 
 =head1 SYNOPSIS
 
-The Browse object can be used with the default HTML layout, which includes all of the features.
+The Browse object can be used with the default HTML layout, which includes all of the labeling features, such as "Sorted by" and "Starting row".
 
     use IOSea::Browse;
 
@@ -432,7 +435,7 @@ The Browse object can be used with the default HTML layout, which includes all o
     my $params      = { fields   => $fields,
                         sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
                         connect  => { db   => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
-                        urls     => { root => 'http://bioinformatics.ualr.edu/', browse => 'cgi-bin/eg/browse.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
+                        urls     => { root => 'http://www.ourpug.org/', browse => 'cgi-bin/eg/browse.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
                         classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
                         features => { default_html => 1, delete => 'each' } };
 
@@ -455,8 +458,9 @@ The Browse object can be used with the default HTML layout, which includes all o
     # Print page
     print $html;
     
-It can also be used with a Template system (such as Template Toolkit) by removing the "default_html" feature.
+A working example of this form is available at L<OurPUG.org IOSea::Browse Default HTML Version|http://www.ourpug.org/cgi-bin/eg/browse.cgi>.
 
+It can also be used with a Template system (such as Template Toolkit) by removing the "default_html" feature. Using this method, you can decide which of the features you wish to use on your form.
 
     use Template;
     use IOSea::Browse;
@@ -465,8 +469,8 @@ It can also be used with a Template system (such as Template Toolkit) by removin
     
     my $params      = { fields   => $fields,
                         sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
-                        connect  => { db   => 'dev', host => 'localhost', user => 'root', pass => 'binf.452e' },
-                        urls     => { root => 'http://bioinformatics.ualr.edu/', browse => 'cgi-bin/eg/browse_tmpl.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi' },
+                        connect  => { db   => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
+                        urls     => { root => 'http://www.ourpug.org/', browse => 'cgi-bin/eg/browse_tmpl.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi' },
                         classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
                         features => { delete => 'multi' } };
 
@@ -475,41 +479,90 @@ It can also be used with a Template system (such as Template Toolkit) by removin
     my $template    = Template->new();
        $template->process( \$tmpl, $build );
     
+A working example of this form is available at L<OurPUG.org IOSea::Browse TMPL Version|http://www.ourpug.org/cgi-bin/eg/browse_tmpl.cgi>.
+
 =head1 DESCRIPTION
 
-The Browse object is a flexible component for listing data in an HTML table.
+The Browse object is a flexible component for listing data in an HTML table. As a script developer, you must define the fields and set the parameters for your desired features.
 
 =head3 FIELDS 
 
-It requires a fields list and a SQL statement to define the data. Field options include:
+The module requires a fields list-of-hashes to define the name, label, and other features of each column.
+
+    my $fields      = [ { name   => 'state_capital_id', label => 'ID',            
+                          hide => 1, sort => 0 },
+                        { name   => 'state',            label => 'State',         
+			  hide => 0, sort => 1, link => 'link1', id => 0 },
+
+Field options include:
 
 =over
 
-=item name
+=item * name
 
 This is the SQL field name. It is used in conjuction with sort to reorder the table. It is also used in the "Sorted by" label feature.
 
-=item label
+=item * label
 
 This is the header label. It doesn't have to match the database. It will be clickable if sort is TRUE.
 
-=item hide
+=item * hide
 
 This setting is optional for all fields. If TRUE, it will keep Browse from displaying the column. This is useful for keys/foreign keys that are included for the purpose of linking to other screens.
 
-=item sort
+=item * sort
 
 This setting enables the user to click on this column's heading (label) to resort the column. Repeatedly clicking the column heading alternates between ascending and descending sorts.
 
-=item link
+=item * link
 
 This setting defines a link-out for this column's data. There must also be a URL setting for the value of this link.
 
-=item id
+=item * id
 
 This setting defines which column's value is appended to the link-out URL. Note: this column should be included in the SQL statement.
 
 =back
+
+=head3 SQL STATEMENT
+
+Use a select statement of the form "select field1, field2 from table". The Browse module will edit your statement three ways:
+
+=over
+
+=item * Counting rows
+
+The "field1, field2" portion of your statement is replaced with "count(*)" to count the total number of rows.
+
+=item * Sorting rows
+
+The statement will be appended by "order by <sort_field> <sort_vector>" iff a column heading is clicked to resort the rows. Once resorted, the same relative index will be used to create a view of the data. If you were on row 41 of 50 before resorting, you will still be on row 41 of 50 after resorting.
+
+=item * Limiting view
+
+The statement will be appended by "limit <index>, <window>" in order to select just the rows to be viewed based on your current relative index and window settings.
+
+=back
+
+=head3 CONNECT PARAMETERS
+
+These parameters are necessary for connecting to your MySQL database. You may get these values from a configuration file instead of hardcoding them, but they should be included in a hashref value for the "connect" parameter key.
+
+=head3 URLS AND LINK-OUTS
+
+Two keys should always be defined: "root" and "browse".
+
+If all of your scripts/controllers use a common domain or directory, use the root key to set it. If they are on different pathways or domains, set the root key to an empty string. 
+
+Additional URLs may be defined. The keys should match the "link" key values from the fields list-of-hashes. In the included example, the "State" column has a link-out named "link1", so the "urls" parameter includes a URL key for link1, which points to "cgi-bin/eg/browse_link1.cgi?id=". Note that the given field's "id" value is defined as a column number, so in this example, the link-out for each row will include that row's "state_capital_id" value.
+
+=head3 CLASSES
+
+This list of CSS classes enables you to create alternating style patterns on your data rows for visibility. Note that the default classes are ["rowA", "rowB"], which alternates every other row. The included example uses a larger pattern ["rowA", "rowA", "rowA", "rowB", "rowB", "rowB"], which alternates between sets of three rows for each style. You may include as many styles as you wish, although more than two is probably detrimental.
+
+=head3 DEFAULT HTML FEATURE 
+
+The module can return the default layout by using the "default_html" key in the "features" parameter hashref. If you do not use this setting, then the module will return a hashref of individual blocks for each data and label feature. This hashref is suitable for passing to Template. The included example html/browse.tmpl illustrates the hashref keys.
 
 =head3 DELETE FEATURE 
 
@@ -517,15 +570,71 @@ There are two different delete methods available in addition to disabling the de
 
 You can enable a delete per row:
 
-    features => { default_html => 1, delete => 'each' } };
+    features => { default_html => 1, delete => 'each' }
 
 You can enable delete checkboxes with a "Delete selected" button:
 
-    features => { default_html => 1, delete => 'multi' } };
+    features => { default_html => 1, delete => 'multi' } 
 
-You can disable delete by removing the delete key from the "features" parameter:
+You can disable delete by removing the delete key from the "features" parameter key:
 
-    features => { default_html => 1, delete => 'each' } };
+    features => { default_html => 1 } 
+
+=head3 INCLUDED SCRIPTS
+
+Two of the included scripts illustrate working implementations of IOSea::Browse using the included browse.sql data.
+
+=over
+
+=item * browse.cgi
+
+Shows "each" delete and "default_html" feature.
+
+=item * browse_tmpl.cgi
+
+Shows "multi" delete and uses Template to manage HTML layout.
+
+=back
+
+Additionally, a browse_delete.cgi script is included as a target for the browse*cgi scripts. Its only purpose is to display the CGI variables sent from the form or link-out.
+
+To edit the scripts for your system, include these steps.
+
+=over
+
+=item 1.  Install IOSea::Browse.
+
+=item 2.  Set script ownership (chown) and permissions (chmod) if necessary.
+
+=item 3.  Run the included browse.sql script against your database.
+
+=item 4.  Edit browse.cgi and change the database "mydb" to your database name.
+
+=item 5.  Edit browse.cgi and change the user "user" to your user name.
+
+=item 6.  Edit browse.cgi and change the password "pass" to your password.
+
+=back
+
+=head3 INCLUDED HTML FILES
+
+The included files are:
+
+=over
+
+=item * browse.css
+
+This file can be edited and placed in your traditional styles directory, or the styles can be added to your choice of CSS file.
+
+=item * browse.js
+
+This file is included for illustration, but the generated version should be used since the included URLs are built according to your script's need. (The scripts reset the "action" for the form.)
+
+=item * browse.tmpl
+
+This file can be edited and placed in your traditional template directory, or you can use whatever template variables you wish in your own tmpl file.
+
+=back
 
 =head1 INTERFACE 
 
@@ -533,21 +642,37 @@ The module has only one public method besides new().
 
 =over
 
-=item build()
+=item * build()
+
+Returns a hashref or html depending on the "default_html" feature setting (see above). The included hashref-keys/tmpl-variables are:
+
+    browse_styles   
+    browse_script   
+    browse_action   
+    browse_table    
+    browse_sorted   
+    browse_start    
+    browse_prevnext 
+    browse_show     
+    browse_goto     
+    browse_control  
+    browse_delete   
 
 =back
 
-The following methods are considered private, but may be useful depending on your implementation.
+The following methods are considered private because they are already called by build(), but may be useful depending on your implementation.
 
 =over
 
-=item _build_styles()
+=item * _build_styles()
 
-=item _build_tmpl()
+Returns the default CSS stylesheet.
+
+=item * _build_tmpl()
+
+Returns the default template with variables.
 
 =back
-
-=head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
@@ -573,8 +698,8 @@ L<http://rt.cpan.org>.
 
 =head1 AUTHOR
 
-Roger A Hall  C<< <rogerhall@cpan.org> >>
-Michael Bauer  C<< <kodos@nmt.edu> >>
+    Roger A Hall  C<< <rogerhall@cpan.org> >>
+    Michael Bauer  C<< <kodos@nmt.edu> >>
 
 =head1 LICENSE AND COPYRIGHT
 

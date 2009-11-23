@@ -1,7 +1,7 @@
 <script language="javascript">
 	function browseSetIndex(index) {
 		document.getElementById("index").value = index;
-		document.browse.action = "http://bioinformatics.ualr.edu/cgi-bin/eg/browse.cgi";
+		document.browse.action = "http://www.ourpug.org/cgi-bin/eg/browse.cgi";
 		document.browse.submit();
 	}
 	function browseSort(sort) {
@@ -17,7 +17,7 @@
 		    document.getElementById("sort_vec").value = "asc";
 		}
 		document.getElementById("sort").value = sort;
-		document.browse.action = "http://bioinformatics.ualr.edu/cgi-bin/eg/browse.cgi";
+		document.browse.action = "http://www.ourpug.org/cgi-bin/eg/browse.cgi";
 		document.browse.submit();
 	}
 	function browseDelete() {
@@ -33,7 +33,7 @@
 			}
 		}
 		document.getElementById("delete_ids").value = myIDs.join();
-		document.browse.action = "http://bioinformatics.ualr.edu/cgi-bin/eg/browse_delete.cgi";
+		document.browse.action = "http://www.ourpug.org/cgi-bin/eg/browse_delete.cgi";
 		document.browse.submit();
 	}
 </script>
