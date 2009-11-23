@@ -1,0 +1,17 @@
+Revision history for IOSea-Browse
+
+1.0.0  Mon Nov 23 15:00:00 2009
+       Initial release.
+       Simple fields hash plus SQL statement.
+       Multiple link-outs definable with hidden columns.
+       Sortable columns.
+       Multi and Each Deletes.
+       TMPL Hash values.
+       Default HTML layout.
+       Default styles.
+       Sorted by, Starting row, Show rows, Go to page.
+       State capitals SQL.
+
+0.0.1  Fri Oct 30 00:46:03 2009
+       Module-starter creation.
+
