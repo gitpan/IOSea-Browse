@@ -1,4 +1,4 @@
-IOSea-Browse version 1.0.1
+IOSea-Browse version 1.0.2
 
 IOSea-Browse creates a browsable HTML list of data based on a field list-of-hashes and a SQL statement.
 
@@ -17,6 +17,8 @@ DEPENDENCIES
 
 DBI
 DBIx::MySperqlOO
+Class::Std
+Class::Std::Utils
 
 COPYRIGHT AND LICENSE
 

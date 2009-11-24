@@ -7,7 +7,7 @@ use warnings;
 use strict;
 use Carp;
 
-use version; our $VERSION = qv('1.0.1');
+use version; our $VERSION = qv('1.0.2');
 
 {
         my %dbh_of       :ATTR( :get<dbh>      :set<dbh>                                          );
@@ -434,8 +434,12 @@ The Browse object can be used with the default HTML layout, which includes all o
     # Define browse parameters (including fields and matchin SQL statement)
     my $params      = { fields   => $fields,
                         sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
-                        connect  => { db   => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
-                        urls     => { root => 'http://www.ourpug.org/', browse => 'cgi-bin/eg/browse.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
+                        connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
+                        urls     => { root   => 'http://www.ourpug.org/', 
+			              browse => 'cgi-bin/eg/browse.cgi', 
+				      link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
+				      link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
+				      delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
                         classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
                         features => { default_html => 1, delete => 'each' } };
 
@@ -458,7 +462,7 @@ The Browse object can be used with the default HTML layout, which includes all o
     # Print page
     print $html;
     
-A working example of this form is available at L<OurPUG.org IOSea::Browse Default HTML Version|http://www.ourpug.org/cgi-bin/eg/browse.cgi>.
+A working example of this form is available at L<"OurPUG.org IOSea::Browse Default HTML Version"|http://www.ourpug.org/cgi-bin/eg/browse.cgi> and is included in this package as "scripts/browse.cgi".
 
 It can also be used with a Template system (such as Template Toolkit) by removing the "default_html" feature. Using this method, you can decide which of the features you wish to use on your form.
 
@@ -469,8 +473,12 @@ It can also be used with a Template system (such as Template Toolkit) by removin
     
     my $params      = { fields   => $fields,
                         sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
-                        connect  => { db   => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
-                        urls     => { root => 'http://www.ourpug.org/', browse => 'cgi-bin/eg/browse_tmpl.cgi', link1 => 'cgi-bin/eg/browse_link1.cgi?id=', link2 => 'cgi-bin/eg/browse_link2.cgi?id=', delete => 'cgi-bin/eg/browse_delete.cgi' },
+                        connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
+                        urls     => { root   => 'http://www.ourpug.org/', 
+			              browse => 'cgi-bin/eg/browse_tmpl.cgi', 
+				      link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
+				      link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
+				      delete => 'cgi-bin/eg/browse_delete.cgi' },
                         classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
                         features => { delete => 'multi' } };
 
@@ -479,7 +487,7 @@ It can also be used with a Template system (such as Template Toolkit) by removin
     my $template    = Template->new();
        $template->process( \$tmpl, $build );
     
-A working example of this form is available at L<OurPUG.org IOSea::Browse TMPL Version|http://www.ourpug.org/cgi-bin/eg/browse_tmpl.cgi>.
+A working example of this form is available at L<"OurPUG.org IOSea::Browse TMPL Version"|http://www.ourpug.org/cgi-bin/eg/browse_tmpl.cgi> and is included in this package as "scripts/browse_tmpl.cgi".
 
 =head1 DESCRIPTION
 
@@ -498,27 +506,27 @@ Field options include:
 
 =over
 
-=item * name
+=item * name (req) 
 
 This is the SQL field name. It is used in conjuction with sort to reorder the table. It is also used in the "Sorted by" label feature.
 
-=item * label
+=item * label (req)
 
 This is the header label. It doesn't have to match the database. It will be clickable if sort is TRUE.
 
-=item * hide
+=item * hide (opt)
 
 This setting is optional for all fields. If TRUE, it will keep Browse from displaying the column. This is useful for keys/foreign keys that are included for the purpose of linking to other screens.
 
-=item * sort
+=item * sort (opt)
 
 This setting enables the user to click on this column's heading (label) to resort the column. Repeatedly clicking the column heading alternates between ascending and descending sorts.
 
-=item * link
+=item * link (opt)
 
 This setting defines a link-out for this column's data. There must also be a URL setting for the value of this link.
 
-=item * id
+=item * id (opt)
 
 This setting defines which column's value is appended to the link-out URL. Note: this column should be included in the SQL statement.
 
@@ -600,7 +608,7 @@ Additionally, a browse_delete.cgi script is included as a target for the browse*
 
 To edit the scripts for your system, include these steps.
 
-=over
+=over 4
 
 =item 1.  Install IOSea::Browse.
 
@@ -696,10 +704,17 @@ Please report any bugs or feature requests to
 C<bug-iosea-browse@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org>.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-    Roger A Hall  C<< <rogerhall@cpan.org> >>
-    Michael Bauer  C<< <kodos@nmt.edu> >>
+Feel free to email the authors with questions or concerns. Please be patient for a reply.
+
+=over 
+
+=item * Roger Hall (roger@iosea.com), (rahall2@ualr.edu) 
+
+=item * Michael Bauer (mbkodos@gmail.com), (mabauer@ualr.edu) 
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
