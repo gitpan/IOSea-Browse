@@ -7,7 +7,7 @@ use warnings;
 use strict;
 use Carp;
 
-use version; our $VERSION = qv('1.0.2');
+use version; our $VERSION = qv('1.0.3');
 
 {
         my %dbh_of       :ATTR( :get<dbh>      :set<dbh>                                          );
@@ -104,6 +104,10 @@ use version; our $VERSION = qv('1.0.2');
 		my ( $self ) = @_;
 		my $url      = $self->get_urls()->{root} .  $self->get_urls()->{browse};
 		my $html     = '<script language="javascript">' . "\n";
+                   $html    .= 'function browseSetWindow() {' . "\n";
+                   $html    .= '	document.browse.action = "' . $url . '";' . "\n";
+                   $html    .= '	document.browse.submit();' . "\n";
+                   $html    .= '}' . "\n";
                    $html    .= 'function browseSetIndex(index) {' . "\n";
                    $html    .= '	document.getElementById("index").value = index;' . "\n";
                    $html    .= '	document.browse.action = "' . $url . '";' . "\n";
@@ -139,9 +143,13 @@ use version; our $VERSION = qv('1.0.2');
 			   $html .= '			}' . "\n";
 			   $html .= '		}' . "\n";
 			   $html .= '	}' . "\n";
-                	   $html .= '	document.getElementById("delete_ids").value = myIDs.join();' . "\n";
-                	   $html .= '	document.browse.action = "' . $url . '";' . "\n";
-                	   $html .= '	document.browse.submit();' . "\n";
+                	   $html .= '	if ( myIDs.length > 0 ) {' . "\n";
+                	   $html .= '		document.getElementById("delete_ids").value = myIDs.join();' . "\n";
+                	   $html .= '		document.browse.action = "' . $url . '";' . "\n";
+                	   $html .= '		document.browse.submit();' . "\n";
+                	   $html .= '	} else {' . "\n";
+                	   $html .= '		alert("No delete checkboxes selected.");' . "\n";
+                	   $html .= '	}' . "\n";
                 	   $html .= '}' . "\n";
 		}
 		   $html    .= '</script>' . "\n";
@@ -290,7 +298,7 @@ STYLES_END
 	sub _build_show {
 		my ( $self ) = @_;
 		my $window   = $self->get_window();
-		my $html     = '<font class="browseInfo">Show <input class="browseSmallBox" size="4" type="text" name="window" id="window" value="' .$window . '"> rows.</font> <input type="submit" class="browseSmallButton" value="Submit">';
+		my $html     = '<font class="browseInfo">Show <input class="browseSmallBox" size="4" type="text" name="window" id="window" value="' .$window . '"> rows.</font> <input type="button" onclick="browseSetWindow();" class="browseSmallButton" value="Submit">';
 		return $html;
 	}
 
@@ -401,9 +409,11 @@ IOSea::Browse - HTML table from MySQL to display rows with sortable columns, fle
 
 =head1 VERSION
 
-This document describes IOSea::Browse version 1.0.1
+This document describes IOSea::Browse version 1.0.3
 
 =head1 SYNOPSIS
+
+This module enables a browsable list for data with controls to set the viewing window (page length), page to previous and next pages, jump to a page, resort the rows by column headers, delete rows, and define link-outs for multiple columns. Links to working examples are listed below, and the CGI scripts are included.
 
 The Browse object can be used with the default HTML layout, which includes all of the labeling features, such as "Sorted by" and "Starting row".
 
@@ -412,39 +422,39 @@ The Browse object can be used with the default HTML layout, which includes all o
     # Get CGI variables using favorite method
     
     # Define table fields
-    my $fields      = [ { name   => 'state_capital_id', label => 'ID',            
-                          hide => 1, sort => 0 },
-                        { name   => 'state',            label => 'State',         
-			  hide => 0, sort => 1, link => 'link1', id => 0 },
-                        { name   => 'statehood_year',   label => 'Statehood',     
-			  hide => 0, sort => 1 },
-                        { name   => 'capital',          label => 'Capital',       
-			  hide => 0, sort => 1, link => 'link2', id => 0 },
-                        { name   => 'capital_since',    label => 'Capital Since', 
-			  hide => 0, sort => 1 },
-                        { name   => 'most_populous',    label => 'Most Populous', 
-			  hide => 0, sort => 1 },
-                        { name   => 'city_population',  label => 'City Pop.',     
-			  hide => 0, sort => 1 },
-                        { name   => 'metro_population', label => 'Metro Pop.',    
-			  hide => 1, sort => 1 },
-                        { name   => 'notes',            label => 'Notes',         
-			  hide => 0, sort => 0 } ];
+    my $fields = [ { name   => 'state_capital_id', label => 'ID',            
+                     hide => 1, sort => 0 },
+                   { name   => 'state',            label => 'State',         
+		     hide => 0, sort => 1, link => 'link1', id => 0 },
+                   { name   => 'statehood_year',   label => 'Statehood',     
+		     hide => 0, sort => 1 },
+                   { name   => 'capital',          label => 'Capital',       
+		     hide => 0, sort => 1, link => 'link2', id => 0 },
+                   { name   => 'capital_since',    label => 'Capital Since', 
+		     hide => 0, sort => 1 },
+                   { name   => 'most_populous',    label => 'Most Populous', 
+		     hide => 0, sort => 1 },
+                   { name   => 'city_population',  label => 'City Pop.',     
+		     hide => 0, sort => 1 },
+                   { name   => 'metro_population', label => 'Metro Pop.',    
+		     hide => 1, sort => 1 },
+                   { name   => 'notes',            label => 'Notes',         
+		     hide => 0, sort => 0 } ];
     
-    # Define browse parameters (including fields and matchin SQL statement)
-    my $params      = { fields   => $fields,
-                        sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
-                        connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
-                        urls     => { root   => 'http://www.ourpug.org/', 
-			              browse => 'cgi-bin/eg/browse.cgi', 
-				      link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
-				      link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
-				      delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
-                        classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
-                        features => { default_html => 1, delete => 'each' } };
+    # Define browse parameters (including fields and matching SQL statement)
+    my $params = { fields   => $fields,
+                   sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
+                   connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
+                   urls     => { root   => 'http://www.ourpug.org/', 
+			         browse => 'cgi-bin/eg/browse.cgi', 
+				 link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
+				 link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
+				 delete => 'cgi-bin/eg/browse_delete.cgi?id=' },
+                   classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
+                   features => { default_html => 1, delete => 'each' } };
 
     # Create the browse object
-    my $browse      = IOSea::Browse->new( $params );
+    my $browse = IOSea::Browse->new( $params );
     
     # Build HTML page
     my $html  = "Content-type: text/html\n";
@@ -462,7 +472,7 @@ The Browse object can be used with the default HTML layout, which includes all o
     # Print page
     print $html;
     
-A working example of this form is available at L<"OurPUG.org IOSea::Browse Default HTML Version"|http://www.ourpug.org/cgi-bin/eg/browse.cgi> and is included in this package as "scripts/browse.cgi".
+A working example of this form is available at L<http://www.ourpug.org/cgi-bin/eg/browse.cgi> and is included in this package as "scripts/browse.cgi".
 
 It can also be used with a Template system (such as Template Toolkit) by removing the "default_html" feature. Using this method, you can decide which of the features you wish to use on your form.
 
@@ -471,36 +481,67 @@ It can also be used with a Template system (such as Template Toolkit) by removin
 
     ...
     
-    my $params      = { fields   => $fields,
-                        sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
-                        connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
-                        urls     => { root   => 'http://www.ourpug.org/', 
-			              browse => 'cgi-bin/eg/browse_tmpl.cgi', 
-				      link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
-				      link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
-				      delete => 'cgi-bin/eg/browse_delete.cgi' },
-                        classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
-                        features => { delete => 'multi' } };
+    my $params = { fields   => $fields,
+                   sql      => "select state_capital_id, state, statehood_year, capital, capital_since, most_populous, city_population, metro_population, notes from state_capitals",
+                   connect  => { db => 'mydb', host => 'localhost', user => 'user', pass => 'pass' },
+                   urls     => { root   => 'http://www.ourpug.org/', 
+			         browse => 'cgi-bin/eg/browse_tmpl.cgi', 
+				 link1  => 'cgi-bin/eg/browse_link1.cgi?id=', 
+				 link2  => 'cgi-bin/eg/browse_link2.cgi?id=', 
+				 delete => 'cgi-bin/eg/browse_delete.cgi' },
+                   classes  => ['browseRowA', 'browseRowA', 'browseRowA', 'browseRowB', 'browseRowB', 'browseRowB'],
+                   features => { delete => 'multi' } };
 
-    my $browse      = IOSea::Browse->new( $params );
-    my $build       = $browse->build( \%cgi_vars );
-    my $template    = Template->new();
+    my $browse = IOSea::Browse->new( $params );
+    my $build  = $browse->build( \%cgi_vars );
+
+    my $template = Template->new();
        $template->process( \$tmpl, $build );
     
-A working example of this form is available at L<"OurPUG.org IOSea::Browse TMPL Version"|http://www.ourpug.org/cgi-bin/eg/browse_tmpl.cgi> and is included in this package as "scripts/browse_tmpl.cgi".
+A working example of this form is available at L<http://www.ourpug.org/cgi-bin/eg/browse_tmpl.cgi> and is included in this package as "scripts/browse_tmpl.cgi".
 
 =head1 DESCRIPTION
 
 The Browse object is a flexible component for listing data in an HTML table. As a script developer, you must define the fields and set the parameters for your desired features.
 
-=head3 FIELDS 
+=head2 PARAMETERS
+
+=over
+
+=item * fields (req) 
+
+Defines the columns of the table.
+
+=item * sql (req) 
+
+SQL statement which matches the fields list parameter. It may use a where clause to filter rows.
+
+=item * connect (req) 
+
+Connect parameters for MySQL database.
+
+=item * urls (req) 
+
+Script URK plus link-out and delete URLS.
+
+=item * classes (opt) 
+
+Optional parameter defining CSS styles for displaying alternating rows.
+
+=item * features (opt) 
+
+Optional parameter for controlling delete and layout features.
+
+=back
+
+=head2 FIELDS LIST
 
 The module requires a fields list-of-hashes to define the name, label, and other features of each column.
 
-    my $fields      = [ { name   => 'state_capital_id', label => 'ID',            
-                          hide => 1, sort => 0 },
-                        { name   => 'state',            label => 'State',         
-			  hide => 0, sort => 1, link => 'link1', id => 0 },
+    my $fields = [ { name   => 'state_capital_id', label => 'ID',            
+                     hide => 1, sort => 0 },
+                   { name   => 'state',            label => 'State',         
+		     hide => 0, sort => 1, link => 'link1', id => 0 },
 
 Field options include:
 
@@ -508,11 +549,11 @@ Field options include:
 
 =item * name (req) 
 
-This is the SQL field name. It is used in conjuction with sort to reorder the table. It is also used in the "Sorted by" label feature.
+This is the SQL field name. It is used in conjunction with sort to reorder the table. It is also used in the "Sorted by" label feature.
 
 =item * label (req)
 
-This is the header label. It doesn't have to match the database. It will be clickable if sort is TRUE.
+This is the header label. It does not have to match the database field. It will be clickable if sort is TRUE.
 
 =item * hide (opt)
 
@@ -531,6 +572,8 @@ This setting defines a link-out for this column's data. There must also be a URL
 This setting defines which column's value is appended to the link-out URL. Note: this column should be included in the SQL statement.
 
 =back
+
+=head2 OTHER REQUIRED PARAMETERS
 
 =head3 SQL STATEMENT
 
@@ -554,7 +597,7 @@ The statement will be appended by "limit <index>, <window>" in order to select j
 
 =head3 CONNECT PARAMETERS
 
-These parameters are necessary for connecting to your MySQL database. You may get these values from a configuration file instead of hardcoding them, but they should be included in a hashref value for the "connect" parameter key.
+These parameters are necessary for connecting to your MySQL database. You may get these values from a configuration file instead of hard-coding them, but they should be included in a hashref value for the "connect" parameter key.
 
 =head3 URLS AND LINK-OUTS
 
@@ -563,6 +606,8 @@ Two keys should always be defined: "root" and "browse".
 If all of your scripts/controllers use a common domain or directory, use the root key to set it. If they are on different pathways or domains, set the root key to an empty string. 
 
 Additional URLs may be defined. The keys should match the "link" key values from the fields list-of-hashes. In the included example, the "State" column has a link-out named "link1", so the "urls" parameter includes a URL key for link1, which points to "cgi-bin/eg/browse_link1.cgi?id=". Note that the given field's "id" value is defined as a column number, so in this example, the link-out for each row will include that row's "state_capital_id" value.
+
+=head2 OPTIONAL PARAMETERS
 
 =head3 CLASSES
 
@@ -588,7 +633,9 @@ You can disable delete by removing the delete key from the "features" parameter 
 
     features => { default_html => 1 } 
 
-=head3 INCLUDED SCRIPTS
+=head2 INCLUDED FILES
+
+=head3 CGI SCRIPTS
 
 Two of the included scripts illustrate working implementations of IOSea::Browse using the included browse.sql data.
 
@@ -624,7 +671,7 @@ To edit the scripts for your system, include these steps.
 
 =back
 
-=head3 INCLUDED HTML FILES
+=head3 HTML FILES
 
 The included files are:
 
